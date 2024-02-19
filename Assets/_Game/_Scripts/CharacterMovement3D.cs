@@ -39,7 +39,6 @@ public class CharacterMovement3D : MonoBehaviour
         CheckHorizontalCollision();
         float projectedPointPositionY = CheckVerticalCollision();
 
-
         var lastPosition = transform.position;
         var targetPosition = lastPosition + velocity * Time.fixedDeltaTime;
         targetPosition.y = projectedPointPositionY;
