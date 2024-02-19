@@ -3,8 +3,8 @@ using UnityEngine;
 public class CharacterMovement3D : MonoBehaviour
 {
     [SerializeField] private float maxSpeedXZ = 15f;
-    [SerializeField] private float acceleration = 100f;
-
+    [SerializeField] private float acceleration = 50;
+    [SerializeField] private float deceleration = 45;
     [SerializeField] private float speedRotationY = 20f;
 
     private Vector3 velocity;
@@ -24,6 +24,20 @@ public class CharacterMovement3D : MonoBehaviour
     private RaycastHit[] hitHorizontal = new RaycastHit[15];
     private RaycastHit[] hitVertical = new RaycastHit[15];
 
+    public float PercentToReachMaxVelocity 
+    {
+
+        get
+        {
+            Vector3 maxVelocityReachable = new Vector3(1, 0, 1).normalized * maxSpeedXZ;
+
+            var maxVelocityReachableMag = maxVelocityReachable.sqrMagnitude;
+            var percent = velocity.sqrMagnitude / maxVelocityReachableMag;
+            return percent;
+        }
+    
+    } 
+
     public void SetInput(float horizontal, float vertical)
     {
 
@@ -33,7 +47,7 @@ public class CharacterMovement3D : MonoBehaviour
 
     void FixedUpdate()
     {
-        velocity = Vector3.MoveTowards(velocity, targetVelocity, acceleration * Time.fixedDeltaTime);
+        velocity = ProcessVelocity();
         Quaternion targetRotation = ProcessRotation();
 
         CheckHorizontalCollision();
@@ -44,6 +58,22 @@ public class CharacterMovement3D : MonoBehaviour
         targetPosition.y = projectedPointPositionY;
 
         transform.SetPositionAndRotation(targetPosition, targetRotation);
+    }
+
+    private Vector3 ProcessVelocity()
+    {
+        Vector3 copyCurrentVelocity;
+
+        if(velocity.sqrMagnitude <= targetVelocity.sqrMagnitude)
+        {
+            copyCurrentVelocity = Vector3.MoveTowards(velocity, targetVelocity, Time.fixedDeltaTime * acceleration);
+        }
+        else
+        {
+            copyCurrentVelocity = Vector3.MoveTowards(velocity, Vector3.zero, Time.fixedDeltaTime * deceleration);
+        }
+
+        return copyCurrentVelocity;
     }
 
     private Quaternion ProcessRotation()
@@ -120,7 +150,7 @@ public class CharacterMovement3D : MonoBehaviour
         var dot = Vector3.Dot(velocity, inverseNormal);
         var cos = dot / (velocityMagnitude / inverseNormal.magnitude);
 
-        var isApproximatellyCollinears = Mathf.Approximately(cos, 1.0f) || cos >= 0.98f && cos <= 1;
+        var isApproximatellyCollinears = Mathf.Approximately(cos, 1.0f) || (cos >= 0.65f && cos <= 1);
         if (!isApproximatellyCollinears)
         {
             projectedVector = Vector3.ProjectOnPlane(velocity, hit.normal);
@@ -128,7 +158,10 @@ public class CharacterMovement3D : MonoBehaviour
         else
         {
             projectedVector = Vector3.ProjectOnPlane(Quaternion.Euler(0, 45, 0) * velocity, hit.normal);
+
         }
+
+
 
         return projectedVector.normalized * velocityMagnitude;
     }
