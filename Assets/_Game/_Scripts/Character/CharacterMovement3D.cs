@@ -7,7 +7,6 @@ public class CharacterMovement3D : MonoBehaviour
     [SerializeField] private float deceleration = 45;
     [SerializeField] private float speedRotationY = 20f;
 
-    private Vector3 velocity;
     private Vector3 targetVelocity;
     private Vector3 direction;
 
@@ -23,20 +22,9 @@ public class CharacterMovement3D : MonoBehaviour
 
     private RaycastHit[] hitHorizontal = new RaycastHit[15];
     private RaycastHit[] hitVertical = new RaycastHit[15];
-
-    public float PercentToReachMaxVelocity 
-    {
-
-        get
-        {
-            Vector3 maxVelocityReachable = new Vector3(1, 0, 1).normalized * maxSpeedXZ;
-
-            var maxVelocityReachableMag = maxVelocityReachable.sqrMagnitude;
-            var percent = velocity.sqrMagnitude / maxVelocityReachableMag;
-            return percent;
-        }
     
-    } 
+    public Vector3 CurrentVelocity {get; private set;}
+    public float MaxSpeed => maxSpeedXZ;
 
     public void SetInput(float horizontal, float vertical)
     {
@@ -47,14 +35,14 @@ public class CharacterMovement3D : MonoBehaviour
 
     void FixedUpdate()
     {
-        velocity = ProcessVelocity();
+        CurrentVelocity = ProcessVelocity();
         Quaternion targetRotation = ProcessRotation();
 
         CheckHorizontalCollision();
         float projectedPointPositionY = CheckVerticalCollision();
 
         var lastPosition = transform.position;
-        var targetPosition = lastPosition + velocity * Time.fixedDeltaTime;
+        var targetPosition = lastPosition + CurrentVelocity * Time.fixedDeltaTime;
         targetPosition.y = projectedPointPositionY;
 
         transform.SetPositionAndRotation(targetPosition, targetRotation);
@@ -64,13 +52,13 @@ public class CharacterMovement3D : MonoBehaviour
     {
         Vector3 copyCurrentVelocity;
 
-        if(velocity.sqrMagnitude <= targetVelocity.sqrMagnitude)
+        if(CurrentVelocity.sqrMagnitude <= targetVelocity.sqrMagnitude)
         {
-            copyCurrentVelocity = Vector3.MoveTowards(velocity, targetVelocity, Time.fixedDeltaTime * acceleration);
+            copyCurrentVelocity = Vector3.MoveTowards(CurrentVelocity, targetVelocity, Time.fixedDeltaTime * acceleration);
         }
         else
         {
-            copyCurrentVelocity = Vector3.MoveTowards(velocity, Vector3.zero, Time.fixedDeltaTime * deceleration);
+            copyCurrentVelocity = Vector3.MoveTowards(CurrentVelocity, Vector3.zero, Time.fixedDeltaTime * deceleration);
         }
 
         return copyCurrentVelocity;
@@ -91,7 +79,7 @@ public class CharacterMovement3D : MonoBehaviour
 
     private void CheckHorizontalCollision()
     {
-        var rayLenght = velocity * Time.fixedDeltaTime;
+        var rayLenght = CurrentVelocity * Time.fixedDeltaTime;
 
         int hitCount = Physics.BoxCastNonAlloc(
         ColliderCenter,
@@ -106,7 +94,7 @@ public class CharacterMovement3D : MonoBehaviour
         {
             var hit = hitHorizontal[i];
             Vector3 projectedVector = CalculateWallSliding(hit);
-            velocity = new Vector3(projectedVector.x, velocity.y, projectedVector.z);
+            CurrentVelocity = new Vector3(projectedVector.x, CurrentVelocity.y, projectedVector.z);
 
         }
 
@@ -146,18 +134,18 @@ public class CharacterMovement3D : MonoBehaviour
         Vector3 projectedVector;
 
         var inverseNormal = hit.normal * -1;
-        var velocityMagnitude = velocity.magnitude;
-        var dot = Vector3.Dot(velocity, inverseNormal);
+        var velocityMagnitude = CurrentVelocity.magnitude;
+        var dot = Vector3.Dot(CurrentVelocity, inverseNormal);
         var cos = dot / (velocityMagnitude / inverseNormal.magnitude);
 
         var isApproximatellyCollinears = Mathf.Approximately(cos, 1.0f) || (cos >= 0.65f && cos <= 1);
         if (!isApproximatellyCollinears)
         {
-            projectedVector = Vector3.ProjectOnPlane(velocity, hit.normal);
+            projectedVector = Vector3.ProjectOnPlane(CurrentVelocity, hit.normal);
         }
         else
         {
-            projectedVector = Vector3.ProjectOnPlane(Quaternion.Euler(0, 45, 0) * velocity, hit.normal);
+            projectedVector = Vector3.ProjectOnPlane(Quaternion.Euler(0, 45, 0) * CurrentVelocity, hit.normal);
 
         }
 

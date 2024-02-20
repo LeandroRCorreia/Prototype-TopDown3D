@@ -14,6 +14,9 @@ public class CharacterAnimationController : MonoBehaviour
     private Animator animator;
 
 
+    private readonly static int speedPercentHash = Animator.StringToHash(CharacterStringsConstants.percentReachMaxVelocity);
+
+
     void Awake()
     {
         characterMovement = GetComponent<CharacterMovement3D>();
@@ -22,7 +25,8 @@ public class CharacterAnimationController : MonoBehaviour
 
     void LateUpdate()
     {
-        animator.SetFloat(CharacterStringsConstants.percentReachMaxVelocity, Mathf.Abs(characterMovement.PercentToReachMaxVelocity));
+        var speedPercent = characterMovement.CurrentVelocity.sqrMagnitude / (characterMovement.MaxSpeed * characterMovement.MaxSpeed);
+        animator.SetFloat(speedPercentHash, speedPercent);
 
     }
 
