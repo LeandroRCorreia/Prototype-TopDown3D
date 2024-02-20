@@ -6,12 +6,21 @@ public class PlayerController : MonoBehaviour
 
     private CharacterMovement3D characterMovement3D;
 
+    public static PlayerController PlayerInstance {get; private set;} 
+
     void Awake()
     {
+        if(PlayerInstance == null)
+        {
+            PlayerInstance = this;
+        }
+        else
+        {
+            Destroy(this);
+        }
         characterMovement3D = GetComponent<CharacterMovement3D>();
+
     }
-
-
 
     void Update()
     {
