@@ -2,6 +2,7 @@ using UnityEngine;
 
 public class CharacterMovement3D : MonoBehaviour
 {
+    [Header("Movement")]
     [SerializeField] private float maxSpeedXZ = 15f;
     [SerializeField] private float acceleration = 50;
     [SerializeField] private float deceleration = 45;
@@ -131,27 +132,30 @@ public class CharacterMovement3D : MonoBehaviour
 
     private Vector3 CalculateWallSliding(RaycastHit hit)
     {
-        Vector3 projectedVector;
+        const float maxCos = 1;
+        const float minCosToConsiderCollinear = 0.65f;
+        Vector3 projectedCurrentVelocityOnPlane;
 
         var inverseNormal = hit.normal * -1;
         var velocityMagnitude = CurrentVelocity.magnitude;
         var dot = Vector3.Dot(CurrentVelocity, inverseNormal);
-        var cos = dot / (velocityMagnitude / inverseNormal.magnitude);
+        var cos = dot / (velocityMagnitude * inverseNormal.magnitude);
 
-        var isApproximatellyCollinears = Mathf.Approximately(cos, 1.0f) || (cos >= 0.65f && cos <= 1);
+
+        var isApproximatellyCollinears = Mathf.Approximately(cos, maxCos) || (cos >= minCosToConsiderCollinear && cos <= maxCos);
         if (!isApproximatellyCollinears)
         {
-            projectedVector = Vector3.ProjectOnPlane(CurrentVelocity, hit.normal);
+            projectedCurrentVelocityOnPlane = Vector3.ProjectOnPlane(CurrentVelocity, hit.normal);
         }
         else
         {
-            projectedVector = Vector3.ProjectOnPlane(Quaternion.Euler(0, 45, 0) * CurrentVelocity, hit.normal);
+            projectedCurrentVelocityOnPlane = Vector3.ProjectOnPlane(Quaternion.Euler(0, 65, 0) * CurrentVelocity, hit.normal);
 
         }
 
 
 
-        return projectedVector.normalized * velocityMagnitude;
+        return projectedCurrentVelocityOnPlane.normalized * velocityMagnitude;
     }
 
     void OnDrawGizmos()
